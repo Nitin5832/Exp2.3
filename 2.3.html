@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG Drawing Tool</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h2 {
+      margin: 20px;
+      color: #333;
+    }
+
+    .toolbar {
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    select, input[type="color"], button {
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 2px solid #ccc;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+
+    button {
+      background: #6a5acd;
+      color: #fff;
+      border: none;
+    }
+
+    button:hover {
+      background: #5a4acb;
+    }
+
+    .info {
+      margin: 10px;
+      font-size: 15px;
+      color: #222;
+    }
+
+    svg {
+      width: 95vw;
+      height: 60vh;
+      background: #fff;
+      border: 3px solid #6a5acd;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 600px) {
+      svg {
+        height: 50vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>✏️ SVG Drawing Tool</h2>
+  <div class="toolbar">
+    <select id="shapeSelector">
+      <option value="circle">Circle</option>
+      <option value="rect">Rectangle</option>
+      <option value="line">Line</option>
+    </select>
+    <input type="color" id="colorPicker" value="#6a5acd">
+    <button id="undoBtn">Undo</button>
+  </div>
+
+  <div class="info">Shapes drawn: <span id="shapeCount">0</span></div>
+
+  <svg id="drawingCanvas"></svg>
+
+  <script>
+    const canvas = document.getElementById("drawingCanvas");
+    const shapeSelector = document.getElementById("shapeSelector");
+    const colorPicker = document.getElementById("colorPicker");
+    const undoBtn = document.getElementById("undoBtn");
+    const shapeCountDisplay = document.getElementById("shapeCount");
+
+    let drawing = false;
+    let startX, startY;
+    let currentShape = null;
+    let shapes = [];
+
+    function updateShapeCount() {
+      shapeCountDisplay.textContent = shapes.length;
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+      drawing = true;
+      startX = e.offsetX;
+      startY = e.offsetY;
+
+      const shapeType = shapeSelector.value;
+      const color = colorPicker.value;
+
+      if (shapeType === "circle") {
+        currentShape = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        currentShape.setAttribute("cx", startX);
+        currentShape.setAttribute("cy", startY);
+        currentShape.setAttribute("r", 0);
+        currentShape.setAttribute("fill", color);
+      } else if (shapeType === "rect") {
+        currentShape = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        currentShape.setAttribute("x", startX);
+        currentShape.setAttribute("y", startY);
+        currentShape.setAttribute("width", 0);
+        currentShape.setAttribute("height", 0);
+        currentShape.setAttribute("fill", color);
+      } else if (shapeType === "line") {
+        currentShape = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        currentShape.setAttribute("x1", startX);
+        currentShape.setAttribute("y1", startY);
+        currentShape.setAttribute("x2", startX);
+        currentShape.setAttribute("y2", startY);
+        currentShape.setAttribute("stroke", color);
+        currentShape.setAttribute("stroke-width", 3);
+      }
+
+      canvas.appendChild(currentShape);
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!drawing || !currentShape) return;
+
+      const currentX = e.offsetX;
+      const currentY = e.offsetY;
+
+      if (currentShape.tagName === "circle") {
+        const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+        currentShape.setAttribute("r", radius);
+      } else if (currentShape.tagName === "rect") {
+        currentShape.setAttribute("width", Math.abs(currentX - startX));
+        currentShape.setAttribute("height", Math.abs(currentY - startY));
+        currentShape.setAttribute("x", Math.min(startX, currentX));
+        currentShape.setAttribute("y", Math.min(startY, currentY));
+      } else if (currentShape.tagName === "line") {
+        currentShape.setAttribute("x2", currentX);
+        currentShape.setAttribute("y2", currentY);
+      }
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      if (drawing && currentShape) {
+        shapes.push(currentShape);
+        updateShapeCount();
+        currentShape = null;
+      }
+      drawing = false;
+    });
+
+    undoBtn.addEventListener("click", () => {
+      if (shapes.length > 0) {
+        const lastShape = shapes.pop();
+        canvas.removeChild(lastShape);
+        updateShapeCount();
+      }
+    });
+  </script>
+</body>
+</html>
